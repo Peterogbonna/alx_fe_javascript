@@ -72,6 +72,11 @@
     #importFile {
       display: none;
     }
+    #statusMessage {
+      margin-top: 10px;
+      color: #007bff;
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -90,7 +95,10 @@
         <button type="button">Import Quotes</button>
       </label>
       <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
+      <!-- New Sync button -->
+      <button id="syncQuotes">Sync Quotes</button>
     </div>
+    <div id="statusMessage"></div>
     <div id="addQuoteFormContainer"></div>
   </div>
 

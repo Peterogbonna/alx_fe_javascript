@@ -10,6 +10,12 @@ const defaultQuotes = [
 // This variable will hold our quotes array, either from local storage or the default array
 let quotes = [];
 
+// This array simulates the server's data store
+let serverQuotes = [
+  { text: 'The greatest glory in living lies not in never falling, but in rising every time we fall.', category: 'Motivation' },
+  { text: 'The way to get started is to quit talking and begin doing.', category: 'Action' }
+];
+
 // --- Web Storage & JSON Handling Functions ---
 
 // Function to save the quotes array to local storage
@@ -68,6 +74,58 @@ function importFromJsonFile(event) {
   fileReader.readAsText(event.target.files[0]);
 }
 
+// --- Server Interaction & Syncing Functions ---
+
+// Function to update status message on the UI
+function setStatus(message) {
+  const statusMessageDiv = document.getElementById('statusMessage');
+  statusMessageDiv.textContent = message;
+}
+
+// Simulates fetching data from a server with a network delay
+async function fetchQuotesFromServer() {
+  setStatus('Fetching latest data...');
+  return new Promise(resolve => {
+    setTimeout(() => {
+      // In a real app, this would be a fetch() call
+      resolve(serverQuotes);
+    }, 1000); // Simulate 1-second network delay
+  });
+}
+
+// Main syncing function to handle data synchronization and conflict resolution
+async function syncQuotes() {
+  setStatus('Syncing with server...');
+  try {
+    const serverData = await fetchQuotesFromServer();
+    
+    // Simple conflict resolution: server data takes precedence
+    // Create a Set of server quote texts for fast lookup
+    const serverQuoteTexts = new Set(serverData.map(q => q.text));
+    
+    // Filter local quotes to find ones that are not on the server
+    const localQuotesToSync = quotes.filter(q => !serverQuoteTexts.has(q.text));
+    
+    // Combine server data and new local data
+    quotes = [...serverData, ...localQuotesToSync];
+    
+    // Update the "server" with the new local quotes
+    serverQuotes = quotes;
+    
+    // Save the merged data to local storage
+    saveQuotes();
+    
+    // Update the UI
+    populateCategories();
+    showRandomQuote();
+    
+    setStatus('Data synced successfully!');
+  } catch (error) {
+    setStatus('Failed to sync data.');
+    console.error('Syncing error:', error);
+  }
+}
+
 // --- Core Application Functions ---
 
 // Function to display a random quote from the quotes array
@@ -108,9 +166,11 @@ function addQuote() {
       text: quoteText,
       category: quoteCategory
     };
-    // Add the new quote to the array
+    // Add the new quote to the local array and to the "server"
     quotes.push(newQuote);
-    // Save the updated array to local storage
+    serverQuotes.push(newQuote); // Simulate pushing to the server
+    
+    // Save the updated local array to local storage
     saveQuotes();
     // Update the categories in the filter dropdown
     populateCategories();
@@ -118,7 +178,7 @@ function addQuote() {
     newQuoteText.value = '';
     newQuoteCategory.value = '';
     // Display a success message
-    alert('Quote added successfully!');
+    alert('Quote added locally and pending sync!');
     // Update the display with a new random quote
     showRandomQuote();
   } else {
@@ -204,7 +264,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // 4. Attach event listeners to the main buttons
   document.getElementById('newQuote').addEventListener('click', showRandomQuote);
   document.getElementById('exportQuotes').addEventListener('click', exportQuotes);
+  document.getElementById('syncQuotes').addEventListener('click', syncQuotes);
   
   // 5. Dynamically create and append the quote addition form
   createAddQuoteForm();
+  
+  // 6. Set up a periodic sync every 5 minutes (300000 ms)
+  setInterval(syncQuotes, 300000);
 });
