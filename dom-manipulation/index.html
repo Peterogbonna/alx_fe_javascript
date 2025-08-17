@@ -42,7 +42,7 @@
       gap: 10px;
       margin-top: 20px;
     }
-    button {
+    button, select {
       padding: 10px 20px;
       border: none;
       border-radius: 5px;
@@ -51,7 +51,7 @@
       cursor: pointer;
       font-size: 16px;
     }
-    button:hover {
+    button:hover, select:hover {
       background-color: #0056b3;
     }
     #addQuoteFormContainer {
@@ -79,6 +79,11 @@
     <h1>Enhanced Quote Generator</h1>
     <div id="quoteDisplay"></div>
     <div class="actions">
+      <!-- Category Filter Dropdown -->
+      <select id="categoryFilter" onchange="filterQuotes()">
+        <option value="all">All Categories</option>
+        <!-- Categories will be populated here by JavaScript -->
+      </select>
       <button id="newQuote">Show New Quote</button>
       <button id="exportQuotes">Export Quotes</button>
       <label for="importFile" class="custom-file-upload">
