@@ -10,12 +10,6 @@ const defaultQuotes = [
 // This variable will hold our quotes array, either from local storage or the default array
 let quotes = [];
 
-// This array simulates the server's data store
-let serverQuotes = [
-  { text: 'The greatest glory in living lies not in never falling, but in rising every time we fall.', category: 'Motivation' },
-  { text: 'The way to get started is to quit talking and begin doing.', category: 'Action' }
-];
-
 // --- Web Storage & JSON Handling Functions ---
 
 // Function to save the quotes array to local storage
@@ -82,15 +76,26 @@ function setStatus(message) {
   statusMessageDiv.textContent = message;
 }
 
-// Simulates fetching data from a server with a network delay
+// Simulates fetching data from a server using a mock API
 async function fetchQuotesFromServer() {
   setStatus('Fetching latest data...');
-  return new Promise(resolve => {
-    setTimeout(() => {
-      // In a real app, this would be a fetch() call
-      resolve(serverQuotes);
-    }, 1000); // Simulate 1-second network delay
-  });
+  try {
+    const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const data = await response.json();
+    // Transform the mock API data to fit our quote structure
+    const serverQuotes = data.map(post => ({
+      text: post.title,
+      category: `User ${post.userId}`
+    }));
+    return serverQuotes;
+  } catch (error) {
+    console.error('Failed to fetch from server:', error);
+    setStatus('Failed to fetch data from server.');
+    return []; // Return an empty array on error to prevent app from breaking
+  }
 }
 
 // Main syncing function to handle data synchronization and conflict resolution
@@ -108,9 +113,6 @@ async function syncQuotes() {
     
     // Combine server data and new local data
     quotes = [...serverData, ...localQuotesToSync];
-    
-    // Update the "server" with the new local quotes
-    serverQuotes = quotes;
     
     // Save the merged data to local storage
     saveQuotes();
@@ -153,7 +155,7 @@ function showRandomQuote() {
 }
 
 // Function to handle adding a new quote from the form
-function addQuote() {
+async function addQuote() {
   const newQuoteText = document.getElementById('newQuoteText');
   const newQuoteCategory = document.getElementById('newQuoteCategory');
 
@@ -166,21 +168,53 @@ function addQuote() {
       text: quoteText,
       category: quoteCategory
     };
-    // Add the new quote to the local array and to the "server"
-    quotes.push(newQuote);
-    serverQuotes.push(newQuote); // Simulate pushing to the server
-    
-    // Save the updated local array to local storage
-    saveQuotes();
-    // Update the categories in the filter dropdown
-    populateCategories();
-    // Clear the input fields for the next entry
-    newQuoteText.value = '';
-    newQuoteCategory.value = '';
-    // Display a success message
-    alert('Quote added locally and pending sync!');
-    // Update the display with a new random quote
-    showRandomQuote();
+
+    setStatus('Adding quote and syncing...');
+    try {
+      // Simulate posting the new quote to a server
+      const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: newQuote.text,
+          body: newQuote.category,
+          userId: 1, // hardcoded for this example
+        }),
+        headers: {
+          'Content-type': 'application/json; charset=UTF-8',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to post to server.');
+      }
+      
+      const responseData = await response.json();
+      console.log('Server response:', responseData);
+
+      // Add the new quote to the local array
+      quotes.push(newQuote);
+      
+      // Save the updated local array to local storage
+      saveQuotes();
+      // Update the categories in the filter dropdown
+      populateCategories();
+      
+      // Clear the input fields for the next entry
+      newQuoteText.value = '';
+      newQuoteCategory.value = '';
+      
+      setStatus('Quote added successfully and synced!');
+      // Update the display with a new random quote
+      showRandomQuote();
+    } catch (error) {
+      setStatus('Failed to add quote to server.');
+      console.error('Posting error:', error);
+      // Even if server post fails, save locally
+      quotes.push(newQuote);
+      saveQuotes();
+      populateCategories();
+      showRandomQuote();
+    }
   } else {
     alert('Please enter both a quote and a category.');
   }
