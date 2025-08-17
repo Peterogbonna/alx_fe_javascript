@@ -121,7 +121,7 @@ async function syncQuotes() {
     populateCategories();
     showRandomQuote();
     
-    setStatus('Data synced successfully!');
+    setStatus('Quotes synced with server!');
   } catch (error) {
     setStatus('Failed to sync data.');
     console.error('Syncing error:', error);
